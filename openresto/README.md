@@ -1,0 +1,72 @@
+# OpenResto trial, themed for Tenuta Roveglia
+
+A local trial of [OpenResto](https://openres.to) ([code](https://github.com/karanshukla/openresto), MIT),
+release 2.7.1, running in Podman with Tenuta Roveglia's name, colours, fonts and tastings. It's for
+seeing how a restaurant booking system fits our tastings (see [../alternatives-considered.md](../alternatives-considered.md)),
+not for real bookings.
+
+## Running it
+
+Needs Podman, curl, jq and openssl.
+
+```sh
+./run.sh up      # start: http://localhost:8089 (admin at /admin)
+./run.sh setup   # apply the Tenuta Roveglia branding and tasting location (once, after the first start)
+./run.sh down    # stop; bookings and settings are kept
+./run.sh reset   # stop and delete everything
+./run.sh logs
+```
+
+The first `up` creates `.env` with a random admin password and signing key. The admin login is
+`ADMIN_EMAIL` and `ADMIN_PASSWORD` in that file, which is not committed.
+
+## How it's put together
+
+One Podman pod, `openresto-roveglia`, published on 127.0.0.1:8089 only:
+
+| Container | Image | Role |
+|---|---|---|
+| `-backend` | `ghcr.io/karanshukla/openresto-backend` | API and SQLite database (volume `openresto-roveglia-db`) |
+| `-frontend` | `ghcr.io/karanshukla/openresto-frontend` | The booking site and admin |
+| `-nginx` | `ghcr.io/karanshukla/openresto-nginx` | OpenResto's own proxy, on port 8000 inside the pod |
+| `-theme` | `nginx:1.27-alpine` | Our proxy in front: adds `theme/theme.css` to every page |
+
+OpenResto itself is unmodified. The customisation is in two places:
+
+- **`setup/setup.sh`** sets things through OpenResto's admin API:
+  - **Brand:** the name, the website's colours (brown `#8c5c3b` from the /visite/ buttons, gold
+    `#b5985a`), the contact details, and a tasting photo from the website as the header.
+  - **Home page:** the demo restaurant's highlights are replaced with our four tastings.
+  - **Location:** one "Tenuta Roveglia — Degustazioni" location (the demo's second restaurant is
+    deleted). It's open Monday to Saturday, 10:30 to 17:00, on Rome time, with two-hour visits and the
+    last booking at 15:00.
+  - **Capacity:** a "Sala degustazione" with two groups of up to 10. These sizes are placeholders.
+  - **Booking widget:** allowed on the website's local dev server, `http://localhost:4321`.
+- **`theme/theme.css`** gives the pages the website's fonts: Lora for headings and Open Sans for text,
+  the same font files the website uses.
+
+## Putting it on the website
+
+OpenResto's booking widget is one script tag. It worked in a test page on port 4321:
+
+```html
+<script src="http://localhost:8089/embed.js" data-location="1"></script>
+```
+
+For a real deployment, the instance would need its own address with HTTPS (for example
+`prenota.tenutaroveglia.com`), and that origin added under Settings → Website widget.
+
+## What doesn't fit our tastings
+
+Found while setting this up:
+
+- **No Italian.** OpenResto's interface is in English, French, Spanish and German only. Our own texts
+  (names, descriptions, highlights) can be Italian, but buttons and messages stay in English.
+- **No fixed tasting times.** Slots must be 15, 30 or 60 minutes apart, so guests can pick any half
+  hour from 10:30 to 15:00, not just 10:30 and 15:00 as on /visite/.
+- **Tables, not tastings.** Capacity is tables with seats. There's nothing for tasting types,
+  per-person prices, payment or vouchers, and nothing for age limits or group-size rules per tasting.
+- **Restaurant wording.** For example "The restaurant is closed on this day".
+- **Theme depends on internals.** The font rules use React Native Web's generated class names
+  (`css-146c3p1`) and inline styles, so an OpenResto upgrade could undo them. The colours, texts and
+  photo are proper settings and would survive.

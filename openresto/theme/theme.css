@@ -1,0 +1,33 @@
+/* Tenuta Roveglia theme for OpenResto: the website's fonts (Lora for headings, Open Sans for text).
+   Colours, name and photo are OpenResto brand settings (setup/setup.sh).
+   Fonts: SIL Open Font License, the same files the website serves. */
+
+@font-face { font-family: 'Open Sans'; font-style: normal; font-weight: 300 800; font-display: swap; src: url(fonts/open-sans-latin.woff2) format('woff2'); }
+@font-face { font-family: 'Lora'; font-style: normal; font-weight: 400 700; font-display: swap; src: url(fonts/lora-latin.woff2) format('woff2'); }
+
+/* Text. OpenResto is a React Native Web app: every text element has the class css-146c3p1 and its
+   size and weight in an inline style. Icons set their own font inline (ionicons), which wins over these
+   rules, so they are unaffected. Inputs use css-11aywtz. */
+html body,
+html body .css-146c3p1,
+html body .css-11aywtz {
+  font-family: 'Open Sans', Arial, sans-serif;
+}
+
+/* Headings: semi-bold or bold text of 18px and up, in Lora as on the website. */
+html body .css-146c3p1[style*="font-weight: 600"][style*="font-size: 18px"],
+html body .css-146c3p1[style*="font-weight: 600"][style*="font-size: 19px"],
+html body .css-146c3p1[style*="font-weight: 600"][style*="font-size: 2"],
+html body .css-146c3p1[style*="font-weight: 600"][style*="font-size: 3"],
+html body .css-146c3p1[style*="font-weight: 600"][style*="font-size: 4"],
+html body .css-146c3p1[style*="font-weight: 600"][style*="font-size: 5"],
+html body .css-146c3p1[style*="font-weight: 600"][style*="font-size: 6"],
+html body .css-146c3p1[style*="font-weight: 700"][style*="font-size: 18px"],
+html body .css-146c3p1[style*="font-weight: 700"][style*="font-size: 19px"],
+html body .css-146c3p1[style*="font-weight: 700"][style*="font-size: 2"],
+html body .css-146c3p1[style*="font-weight: 700"][style*="font-size: 3"],
+html body .css-146c3p1[style*="font-weight: 700"][style*="font-size: 4"],
+html body .css-146c3p1[style*="font-weight: 700"][style*="font-size: 5"],
+html body .css-146c3p1[style*="font-weight: 700"][style*="font-size: 6"] {
+  font-family: 'Lora', Georgia, 'Times New Roman', serif;
+}
