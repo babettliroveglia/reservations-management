@@ -76,9 +76,12 @@ RID=$(echo "$LIST" | jq -r '[.[] | select(.name != "Sushi Spot")][0].id')
 # Tastings Monday to Saturday, two hours each, closed Sundays. /visite/ offers only 10:30 and 15:00,
 # but OpenResto slots must be 15, 30 or 60 minutes apart, so every half hour from 10:30 to 15:00 is offered.
 HOURS=$(jq -n '[range(1;7) | {day: ., open: "10:30", close: "17:00", lastBooking: "15:00"}]')
+# The Google and Apple Maps buttons search for the address text. With the winery's name first, both
+# open the winery's own listing (checked 2026-11-22). The bare address puts Google's pin about 700 m
+# north, next to another winery, and "Località Roveglia Nuova 1" is a different place.
 call PUT "/restaurants/$RID" "$(jq -n --argjson h "$HOURS" '{
   name: "Tenuta Roveglia — Degustazioni",
-  address: "Località Roveglia 1, 25010 Pozzolengo (BS)",
+  address: "Tenuta Roveglia, Località Roveglia 1, 25010 Pozzolengo BS",
   description: "Visite e degustazioni in cantina, dal lunedì al sabato. Chiuso la domenica e nei giorni festivi.\n\nCellar tours and tastings, Monday to Saturday. Closed on Sundays and public holidays.",
   phoneNumber: "+39 030 918663",
   emailAddress: "info@tenutaroveglia.it",

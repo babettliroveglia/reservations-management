@@ -41,8 +41,13 @@ One Podman pod, `openresto-roveglia`, published on 127.0.0.1:8089 only:
 | `-theme` | `nginx:1.27-alpine` | Our proxy in front: adds `theme/theme.css` to every page |
 
 The images are tagged with the fork's commit (`git describe`, for example `v2.7.1`), so a new commit
-on the branch means a new build. So far the branch is the unmodified v2.7.1 release, and the
-customisation is in two places here:
+on the branch means a new build. The branch is the v2.7.1 release plus our own changes:
+
+- **"How to find us":** the section with the Google Maps and Apple Maps buttons (on the location page and
+  the booking confirmation) is called "How to find us" instead of "Directions", in English, German and
+  French. Spanish already said "Cómo llegar".
+
+The rest of the customisation is here:
 
 - **`setup/setup.sh`** sets things through OpenResto's admin API:
   - **Brand:** the name, the website's colours (brown `#8c5c3b` from the /visite/ buttons, gold
@@ -51,6 +56,11 @@ customisation is in two places here:
   - **Location:** one "Tenuta Roveglia — Degustazioni" location (the demo's second restaurant is
     deleted). It's open Monday to Saturday, 10:30 to 17:00, on Rome time, with two-hour visits and the
     last booking at 15:00.
+  - **Address:** "Tenuta Roveglia, Località Roveglia 1, 25010 Pozzolengo BS". The maps buttons search
+    for this text, and with the name first both Google and Apple open the winery's own listing. The
+    bare address puts Google's pin about 700 m north, next to another winery; "Località Roveglia
+    Nuova 1" is a different place. The confirmation page's small map uses OpenStreetMap, which doesn't
+    find the address, so it isn't shown.
   - **Capacity:** a "Sala degustazione" with two groups of up to 10. These sizes are placeholders.
   - **Booking widget:** allowed on the website's local dev server, `http://localhost:4321`.
 - **`theme/theme.css`** gives the pages the website's fonts: Lora for headings and Open Sans for text,
