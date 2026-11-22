@@ -1,15 +1,24 @@
 # OpenResto trial, themed for Tenuta Roveglia
 
 A local trial of [OpenResto](https://openres.to) ([code](https://github.com/karanshukla/openresto), MIT),
-release 2.7.1, running in Podman with Tenuta Roveglia's name, colours, fonts and tastings. It's for
+built from our fork, [babettliroveglia/openresto](https://github.com/babettliroveglia/openresto), and running in Podman with Tenuta Roveglia's name, colours, fonts and tastings. It's for
 seeing how a restaurant booking system fits our tastings (see [../alternatives-considered.md](../alternatives-considered.md)),
 not for real bookings.
 
 ## Running it
 
-Needs Podman, curl, jq and openssl.
+Needs Podman, git, curl, jq and openssl, and the fork cloned next to this repo, on its
+`tenutaroveglia` branch:
 
 ```sh
+git clone -b tenutaroveglia git@github.com:babettliroveglia/openresto.git ../../openresto
+```
+
+The `tenutaroveglia` branch starts at the latest community release (v2.7.1), not at the fork's `main`,
+and is where our own changes to OpenResto go. To move to a newer release, merge its tag into the branch.
+
+```sh
+./run.sh build   # build the images from the fork's current checkout (up does this when needed)
 ./run.sh up      # start: http://localhost:8089 (admin at /admin)
 ./run.sh setup   # apply the Tenuta Roveglia branding and tasting location (once, after the first start)
 ./run.sh down    # stop; bookings and settings are kept
@@ -26,12 +35,14 @@ One Podman pod, `openresto-roveglia`, published on 127.0.0.1:8089 only:
 
 | Container | Image | Role |
 |---|---|---|
-| `-backend` | `ghcr.io/karanshukla/openresto-backend` | API and SQLite database (volume `openresto-roveglia-db`) |
-| `-frontend` | `ghcr.io/karanshukla/openresto-frontend` | The booking site and admin |
-| `-nginx` | `ghcr.io/karanshukla/openresto-nginx` | OpenResto's own proxy, on port 8000 inside the pod |
+| `-backend` | `localhost/openresto-roveglia-backend`, built from the fork | API and SQLite database (volume `openresto-roveglia-db`) |
+| `-frontend` | `localhost/openresto-roveglia-frontend`, built from the fork | The booking site and admin |
+| `-nginx` | `localhost/openresto-roveglia-nginx`, built from the fork | OpenResto's own proxy, on port 8000 inside the pod |
 | `-theme` | `nginx:1.27-alpine` | Our proxy in front: adds `theme/theme.css` to every page |
 
-OpenResto itself is unmodified. The customisation is in two places:
+The images are tagged with the fork's commit (`git describe`, for example `v2.7.1`), so a new commit
+on the branch means a new build. So far the branch is the unmodified v2.7.1 release, and the
+customisation is in two places here:
 
 - **`setup/setup.sh`** sets things through OpenResto's admin API:
   - **Brand:** the name, the website's colours (brown `#8c5c3b` from the /visite/ buttons, gold

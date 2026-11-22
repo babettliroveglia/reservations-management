@@ -1,6 +1,10 @@
 #!/bin/sh
-# Runs a trial OpenResto instance in a Podman pod, themed for Tenuta Roveglia.
-#   ./run.sh up      start (first time: creates .env with a random admin password and key)
+# Runs a trial OpenResto instance in a Podman pod, themed for Tenuta Roveglia, built from our fork
+# (github.com/babettliroveglia/openresto, cloned next to this repo as ../openresto; set OPENRESTO_SRC
+# to use another checkout). Build from the fork's `tenutaroveglia` branch: it starts at the latest
+# community release (v2.7.1), and our own changes to OpenResto go there.
+#   ./run.sh build   build the images from the fork's current checkout
+#   ./run.sh up      start, building first if needed (first time: creates .env with a random admin password and key)
 #   ./run.sh setup   apply the Tenuta Roveglia name, colours, photo and tasting location
 #   ./run.sh down    stop and remove the pod (bookings are kept in the volumes)
 #   ./run.sh reset   down, and delete the volumes too (all bookings and settings)
@@ -8,10 +12,34 @@
 set -eu
 cd "$(dirname "$0")"
 
-VERSION="${OPENRESTO_VERSION:-2.7.1}"
+SRC="${OPENRESTO_SRC:-../../openresto}"
 PORT="${OPENRESTO_PORT:-8089}"
 POD=openresto-roveglia
-IMG=ghcr.io/karanshukla/openresto
+IMG=localhost/openresto-roveglia
+
+[ -d "$SRC/OpenRestoApi" ] || { echo "OpenResto source not found at $SRC: clone git@github.com:babettliroveglia/openresto.git there or set OPENRESTO_SRC"; exit 1; }
+# Images are tagged with the fork's commit, so a new commit means a new build.
+VERSION="$(git -C "$SRC" describe --tags --always --dirty)"
+
+build() {
+  branch="$(git -C "$SRC" branch --show-current)"
+  [ "$branch" = tenutaroveglia ] || echo "Note: $SRC is on '${branch:-a detached commit}', not the tenutaroveglia branch."
+  echo "Building OpenResto $VERSION from $SRC"
+  # Podman doesn't guess a registry for short base-image names (e.g. "nginx:1.31.9-alpine"), so
+  # fetch those from Docker Hub first, as Docker would.
+  for f in "$SRC/OpenRestoApi/Dockerfile" "$SRC/openresto-frontend/Dockerfile" "$SRC/nginx/Dockerfile"; do
+    sed -n 's/^FROM \(--platform=[^ ]* \)\{0,1\}\([^ ]*\).*/\2/p' "$f"
+  done | sort -u | while read -r base; do
+    case "$base" in *:*|*@*) ;; *) continue ;; esac            # untagged: a build stage, e.g. "FROM build"
+    case "$base" in */*) case "${base%%/*}" in *.*|*:*|localhost) continue ;; esac ;; esac  # registry already given
+    case "$base" in */*) full="docker.io/$base" ;; *) full="docker.io/library/$base" ;; esac
+    podman image exists "$base" || { podman pull "$full" && podman tag "$full" "$base"; }
+  done
+  podman build -t "$IMG-backend:$VERSION" -f "$SRC/OpenRestoApi/Dockerfile" "$SRC"
+  # The API address is baked into the frontend bundle at build time.
+  podman build -t "$IMG-frontend:$VERSION" --build-arg EXPO_PUBLIC_API_URL=/api "$SRC/openresto-frontend"
+  podman build -t "$IMG-nginx:$VERSION" "$SRC/nginx"
+}
 
 make_env() {
   [ -f .env ] && return
@@ -27,7 +55,13 @@ make_env() {
 
 up() {
   make_env
-  if podman pod exists "$POD"; then echo "Already running: http://localhost:$PORT"; return; fi
+  if podman pod exists "$POD"; then
+    if [ "$(podman pod inspect "$POD" --format '{{.State}}')" = Running ]; then echo "Already running: http://localhost:$PORT"; return; fi
+    podman pod rm -f "$POD" >/dev/null   # a stopped pod; bookings are in the volumes, not the pod
+  fi
+  for part in backend frontend nginx; do
+    podman image exists "$IMG-$part:$VERSION" || { build; break; }
+  done
   podman pod create --name "$POD" -p "127.0.0.1:$PORT:80"
 
   podman run -d --pod "$POD" --name "$POD-backend" --env-file .env \
@@ -62,11 +96,12 @@ up() {
 }
 
 case "${1:-up}" in
+  build) build ;;
   up) up ;;
   setup) PORT="$PORT" ./setup/setup.sh ;;
   down) podman pod rm -f "$POD" 2>/dev/null || true ;;
   reset) podman pod rm -f "$POD" 2>/dev/null || true
          podman volume rm -f openresto-roveglia-db openresto-roveglia-media ;;
   logs) podman pod logs -f "$POD" ;;
-  *) echo "Usage: $0 up|setup|down|reset|logs"; exit 2 ;;
+  *) echo "Usage: $0 build|up|setup|down|reset|logs"; exit 2 ;;
 esac
