@@ -66,6 +66,10 @@ Found while setting this up:
   hour from 10:30 to 15:00, not just 10:30 and 15:00 as on /visite/.
 - **Tables, not tastings.** Capacity is tables with seats. There's nothing for tasting types,
   per-person prices, payment or vouchers, and nothing for age limits or group-size rules per tasting.
+- **No message history.** "Email guest" in a booking sends one message but keeps no copy: the audit
+  log records only that the guest was emailed. OpenResto doesn't receive mail, so guests' replies go
+  to the sending mailbox and aren't linked to the booking. (This trial has no mail server set up, so
+  sending shows an error.)
 - **Restaurant wording.** For example "The restaurant is closed on this day".
 - **Theme depends on internals.** The font rules use React Native Web's generated class names
   (`css-146c3p1`) and inline styles, so an OpenResto upgrade could undo them. The colours, texts and

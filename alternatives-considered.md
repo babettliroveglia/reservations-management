@@ -13,6 +13,8 @@ Each project lists its own site and code first, then where we found the details 
 - **Google Calendar integration** with the company's business calendar.
 - **Less back-and-forth with customers:** confirmation, reminders and changes handled by the system
   rather than by email exchanges.
+- **A message history for each booking:** every email between staff and the guest, including the
+  guest's replies, kept with the booking, so anyone on the staff can see what was agreed.
 - **Italian, English and German.**
 
 Today's booking form only sends an email with the requested details (see the website repo); staff then
