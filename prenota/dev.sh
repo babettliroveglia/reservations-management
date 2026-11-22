@@ -9,7 +9,7 @@ cd "$(dirname "$0")"
 npx wrangler d1 migrations apply prenota-test --local --persist-to .state
 npx wrangler dev --ip 0.0.0.0 --port 8787 --inspector-port 9229 --persist-to .state --show-interactive-dev-session=false &
 npx wrangler dev -c wrangler.admin.toml --ip 0.0.0.0 --port 8788 --inspector-port 9230 --persist-to .state --show-interactive-dev-session=false \
-  --var DEV_ADMIN_EMAIL:staff@localhost &
+  --var DEV_ADMIN_EMAIL:staff@localhost --var PUBLIC_URL:http://localhost:8787 &
 npx wrangler dev -c wrangler.admin.toml --ip 0.0.0.0 --port 8789 --inspector-port 9231 --persist-to .state --show-interactive-dev-session=false \
   --var DEV_ADMIN_EMAIL:staff@localhost --var ACCESS_TEAM_DOMAIN:example.cloudflareaccess.invalid --var ACCESS_AUD:test-audience &
 trap 'kill 0' INT TERM

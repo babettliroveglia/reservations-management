@@ -1,11 +1,8 @@
 // The public booking Worker: serves the booking pages (public/) and the guests' API. No staff functions
 // here: those are in the separate admin Worker (src/admin.ts), behind Cloudflare Access.
-import {
-  availability, bookingByToken, cancelBooking, getClosures, getSettings, getTastings, insertBookingIfRoom,
-} from './db.ts';
-import {
-  addDays, closedReason, guests, isEmail, isInFuture, isValidDate, nowInItaly, partyProblem, priceCents,
-} from './rules.ts';
+import { checkBooking, newToken } from './booking-input.ts';
+import { availability, bookingByToken, cancelBooking, getSettings, getTastings, insertBookingIfRoom } from './db.ts';
+import { addDays, isInFuture, isValidDate, nowInItaly } from './rules.ts';
 
 export interface Env {
   DB: D1Database;
@@ -19,11 +16,6 @@ const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 const problem = (message: string, status = 400) => json({ error: message }, status);
 
-function newToken(): string {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
-}
-
 async function turnstileOk(env: Env, token: unknown, ip: string | null): Promise<boolean> {
   if (!env.TURNSTILE_SECRET_KEY) return true;
   if (typeof token !== 'string' || !token) return false;
@@ -35,9 +27,6 @@ async function turnstileOk(env: Env, token: unknown, ip: string | null): Promise
   return res.ok && ((await res.json()) as { success: boolean }).success === true;
 }
 
-const text = (v: unknown, max: number) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
-const int = (v: unknown) => (typeof v === 'number' ? v : typeof v === 'string' && v !== '' ? Number(v) : 0);
-
 async function createBooking(request: Request, env: Env): Promise<Response> {
   if (!request.headers.get('content-type')?.startsWith('application/json')) return problem('Richiesta non valida.', 415);
   let body: Record<string, unknown>;
@@ -48,30 +37,9 @@ async function createBooking(request: Request, env: Env): Promise<Response> {
   }
   if (body.privacy !== true) return problem('Per prenotare serve il consenso al trattamento dei dati.');
 
-  const date = body.date, time = body.time;
-  const name = text(body.name, 120), email = text(body.email, 200), phone = text(body.phone, 40), notes = text(body.notes, 1000);
-  if (!name) return problem('Inserisci nome e cognome.');
-  if (!isEmail(email)) return problem("Inserisci un indirizzo email valido.");
-  if (phone.replace(/\D/g, '').length < 6) return problem('Inserisci un numero di telefono valido.');
-
-  const settings = await getSettings(env.DB);
-  const today = nowInItaly().date;
-  if (!isValidDate(date) || typeof time !== 'string' || !settings.slotTimes.includes(time)) return problem('Data o orario non validi.');
-  if (!isInFuture(date, time)) return problem("L'orario scelto è già passato.");
-  if (date > addDays(today, settings.horizonDays)) return problem(`Si può prenotare fino a ${settings.horizonDays} giorni in anticipo.`);
-  const closed = closedReason(date, await getClosures(env.DB, date, date));
-  if (closed) return problem(`Siamo chiusi in questa data (${closed}). Scegli un altro giorno.`);
-
-  const tasting = (await getTastings(env.DB)).find(t => t.id === body.tasting);
-  if (!tasting) return problem('Scegli una degustazione.');
-  const party = { adults: int(body.adults), teens: int(body.teens), children: int(body.children) };
-  const partyError = partyProblem(tasting, party);
-  if (partyError) return problem(partyError);
-
-  const booking = {
-    token: newToken(), date, time, tasting_id: tasting.id, ...party, guests: guests(party),
-    name, email, phone, notes, price_cents: priceCents(tasting, party),
-  };
+  const checked = await checkBooking(env.DB, body);
+  if (!checked.ok) return problem(checked.error);
+  const booking = { token: newToken(), ...checked.booking };
   if (!(await insertBookingIfRoom(env.DB, booking))) {
     return problem('Non ci sono più posti sufficienti per questo orario. Scegli un altro orario o un altro giorno.', 409);
   }

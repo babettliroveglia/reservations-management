@@ -25,6 +25,8 @@
         <label>Al <input type="date" id="to" required></label>
         <label class="inline"><input type="checkbox" id="show-cancelled"> Mostra annullate</label>
         <button type="submit">Aggiorna</button>
+        <label class="grow">Cerca <input type="search" id="search" placeholder="nome, email, telefono, note"></label>
+        <button type="button" id="new-booking" class="secondary">+ Nuova prenotazione</button>
       </form>
       <div id="bookings"></div>
     </section>
@@ -50,5 +52,37 @@
       <div id="settings-message" role="status"></div>
     </section>
   </main>
+
+  <dialog id="booking-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-head">
+      <h2 id="dialog-title"></h2>
+      <button type="button" class="close" id="dialog-close" aria-label="Chiudi">×</button>
+    </div>
+    <div id="dialog-view"></div>
+    <form id="booking-form" class="booking-form" hidden novalidate>
+      <label>Degustazione <select id="f-tasting" required></select></label>
+      <div class="two">
+        <label>Giorno <input type="date" id="f-date" required></label>
+        <label>Orario <select id="f-time" required></select></label>
+      </div>
+      <div class="three">
+        <label>Adulti <input type="number" id="f-adults" min="0" max="10" required></label>
+        <label>Ragazzi 13–17 <input type="number" id="f-teens" min="0" max="10"></label>
+        <label>Bambini 0–12 <input type="number" id="f-children" min="0" max="10"></label>
+      </div>
+      <p class="hint" id="f-price"></p>
+      <label>Nome e cognome <input type="text" id="f-name" maxlength="120" required></label>
+      <div class="two">
+        <label>Email <input type="email" id="f-email" maxlength="200"></label>
+        <label>Telefono <input type="tel" id="f-phone" maxlength="40"></label>
+      </div>
+      <label>Note <textarea id="f-notes" rows="3" maxlength="1000"></textarea></label>
+      <div id="form-message" role="alert"></div>
+      <div class="actions">
+        <button type="submit" id="f-save">Salva</button>
+        <button type="button" class="secondary" id="f-cancel">Lascia stare</button>
+      </div>
+    </form>
+  </dialog>
 </body>
 </html>

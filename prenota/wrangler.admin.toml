@@ -22,3 +22,4 @@ enabled = true
 # [vars]
 # ACCESS_TEAM_DOMAIN = "<team>.cloudflareaccess.com"
 # ACCESS_AUD = "<the Access application's AUD tag>"
+# PUBLIC_URL = "https://prenota-test.<subdomain>.workers.dev"   # to show guests' links in the admin

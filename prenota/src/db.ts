@@ -8,6 +8,7 @@ export interface Booking {
   adults: number; teens: number; children: number; guests: number;
   name: string; email: string; phone: string; notes: string; price_cents: number;
   status: 'confirmed' | 'cancelled'; cancelled_by: string | null; created_at: string; cancelled_at: string | null;
+  created_by: string | null; updated_by: string | null; updated_at: string | null;
 }
 
 export async function getSettings(db: D1Database): Promise<Settings> {
@@ -84,24 +85,53 @@ export interface NewBooking {
  * SQL statement, and D1 runs a database's statements one at a time, so two guests can't both take the
  * last places. Returns false if the time is full.
  */
-export async function insertBookingIfRoom(db: D1Database, b: NewBooking): Promise<boolean> {
+export async function insertBookingIfRoom(db: D1Database, b: NewBooking, createdBy: string | null = null): Promise<boolean> {
   const res = await db
-    .prepare(`INSERT INTO bookings (token, date, time, tasting_id, adults, teens, children, guests, name, email, phone, notes, price_cents)
-              SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13
+    .prepare(`INSERT INTO bookings (token, date, time, tasting_id, adults, teens, children, guests, name, email, phone, notes, price_cents, created_by)
+              SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14
               WHERE (SELECT COALESCE(SUM(guests), 0) FROM bookings WHERE date = ?2 AND time = ?3 AND status = 'confirmed') + ?8
                     <= (SELECT CAST(value AS INTEGER) FROM settings WHERE key = 'slot_capacity')`)
     .bind(b.token, b.date, b.time, b.tasting_id, b.adults, b.teens, b.children, b.guests,
-          b.name, b.email, b.phone, b.notes, b.price_cents)
+          b.name, b.email, b.phone, b.notes, b.price_cents, createdBy)
+    .run();
+  return res.meta.changes === 1;
+}
+
+/**
+ * Staff change a confirmed booking. Like insertBookingIfRoom, one statement checks the room and saves:
+ * the booking's own places don't count against it, and keeping the same time with no more people always
+ * fits (even if the capacity was lowered since). Returns false if the booking can't be changed that way.
+ */
+export async function updateBookingIfRoom(
+  db: D1Database, id: number, b: Omit<NewBooking, 'token'>, by: string,
+): Promise<boolean> {
+  const res = await db
+    .prepare(`UPDATE bookings SET date = ?2, time = ?3, tasting_id = ?4, adults = ?5, teens = ?6, children = ?7, guests = ?8,
+                name = ?9, email = ?10, phone = ?11, notes = ?12, price_cents = ?13,
+                updated_by = ?14, updated_at = strftime('%Y-%m-%dT%H:%M:%SZ', 'now')
+              WHERE id = ?1 AND status = 'confirmed' AND (
+                (date = ?2 AND time = ?3 AND ?8 <= guests)
+                OR (SELECT COALESCE(SUM(o.guests), 0) FROM bookings o
+                    WHERE o.date = ?2 AND o.time = ?3 AND o.status = 'confirmed' AND o.id <> ?1) + ?8
+                   <= (SELECT CAST(value AS INTEGER) FROM settings WHERE key = 'slot_capacity'))`)
+    .bind(id, b.date, b.time, b.tasting_id, b.adults, b.teens, b.children, b.guests,
+          b.name, b.email, b.phone, b.notes, b.price_cents, by)
     .run();
   return res.meta.changes === 1;
 }
 
 const BOOKING_COLUMNS = `b.id, b.token, b.date, b.time, b.tasting_id, t.name AS tasting_name, b.adults, b.teens, b.children,
-  b.guests, b.name, b.email, b.phone, b.notes, b.price_cents, b.status, b.cancelled_by, b.created_at, b.cancelled_at`;
+  b.guests, b.name, b.email, b.phone, b.notes, b.price_cents, b.status, b.cancelled_by, b.created_at, b.cancelled_at,
+  b.created_by, b.updated_by, b.updated_at`;
 
 export async function bookingByToken(db: D1Database, token: string): Promise<Booking | null> {
   return db.prepare(`SELECT ${BOOKING_COLUMNS} FROM bookings b JOIN tastings t ON t.id = b.tasting_id WHERE b.token = ?1`)
     .bind(token).first<Booking>();
+}
+
+export async function bookingById(db: D1Database, id: number): Promise<Booking | null> {
+  return db.prepare(`SELECT ${BOOKING_COLUMNS} FROM bookings b JOIN tastings t ON t.id = b.tasting_id WHERE b.id = ?1`)
+    .bind(id).first<Booking>();
 }
 
 export async function bookingsBetween(db: D1Database, from: string, to: string): Promise<Booking[]> {

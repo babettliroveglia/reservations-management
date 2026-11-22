@@ -3,7 +3,10 @@
 // (src/access.ts). Without Access configured it refuses everything, except on localhost when
 // DEV_ADMIN_EMAIL is set (local development only).
 import { accessEmail } from './access.ts';
-import { bookingsBetween, cancelBooking, getClosures, getSettings } from './db.ts';
+import { checkBooking, newToken } from './booking-input.ts';
+import {
+  bookingById, bookingsBetween, cancelBooking, getClosures, getSettings, getTastings, insertBookingIfRoom, updateBookingIfRoom,
+} from './db.ts';
 import { addDays, isValidDate, nowInItaly } from './rules.ts';
 
 export interface Env {
@@ -14,7 +17,11 @@ export interface Env {
   /** The Access application's "AUD" tag. */
   ACCESS_AUD?: string;
   DEV_ADMIN_EMAIL?: string;
+  /** The public booking site, e.g. "https://prenota-test.<subdomain>.workers.dev", to show guests' links. */
+  PUBLIC_URL?: string;
 }
+
+const FULL = 'Non ci sono abbastanza posti a quell\'orario per questo gruppo.';
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
@@ -35,7 +42,40 @@ async function api(request: Request, env: Env, url: URL, staff: string): Promise
     return problem('Richiesta non valida.', 415);
   }
 
-  if (path === '/api/me' && method === 'GET') return json({ email: staff, today: nowInItaly().date });
+  if (path === '/api/me' && method === 'GET') {
+    const settings = await getSettings(env.DB);
+    return json({
+      email: staff, today: nowInItaly().date, publicUrl: env.PUBLIC_URL?.replace(/\/$/, '') ?? null,
+      tastings: await getTastings(env.DB, false), slotTimes: settings.slotTimes,
+    });
+  }
+
+  if (path === '/api/bookings' && method === 'POST') {
+    const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+    if (!body) return problem('Richiesta non valida.');
+    const checked = await checkBooking(env.DB, body, { staff: true });
+    if (!checked.ok) return problem(checked.error);
+    const booking = { token: newToken(), ...checked.booking };
+    if (!(await insertBookingIfRoom(env.DB, booking, staff))) return problem(FULL, 409);
+    const { results } = await env.DB.prepare('SELECT id FROM bookings WHERE token = ?1').bind(booking.token).all<{ id: number }>();
+    return json(await bookingById(env.DB, results[0].id), 201);
+  }
+
+  const one = path.match(/^\/api\/bookings\/(\d+)$/);
+  if (one) {
+    const existing = await bookingById(env.DB, Number(one[1]));
+    if (!existing) return problem('Prenotazione non trovata.', 404);
+    if (method === 'GET') return json(existing);
+    if (method === 'PUT') {
+      if (existing.status !== 'confirmed') return problem('Una prenotazione annullata non si può modificare.', 409);
+      const body = (await request.json().catch(() => null)) as Record<string, unknown> | null;
+      if (!body) return problem('Richiesta non valida.');
+      const checked = await checkBooking(env.DB, body, { staff: true, existing });
+      if (!checked.ok) return problem(checked.error);
+      if (!(await updateBookingIfRoom(env.DB, existing.id, checked.booking, staff))) return problem(FULL, 409);
+      return json(await bookingById(env.DB, existing.id));
+    }
+  }
 
   if (path === '/api/bookings' && method === 'GET') {
     const from = url.searchParams.get('from') ?? nowInItaly().date;

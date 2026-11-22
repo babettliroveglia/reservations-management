@@ -18,7 +18,8 @@ D1 database    prenota-test        tastings, settings, closures, bookings (migra
 |---|---|
 | Booking rules: opening days, holidays, party sizes, prices | `src/rules.ts` (tested by `test/rules.test.ts`) |
 | Database queries | `src/db.ts` |
-| Database tables, and the four tastings | `migrations/0001_schema.sql`, `migrations/0002_tastings.sql` |
+| Checking a booking sent by a guest or by staff | `src/booking-input.ts` |
+| Database tables, and the four tastings | `migrations/` |
 | Staff login check | `src/access.ts` |
 
 **The rules**, as on the website's `/visite/` form:
@@ -38,7 +39,11 @@ their booking. With no emails yet, the page asks them to keep the link. Cancelli
 visit starts.
 
 **Staff admin.** Staff can:
-- see bookings by day and time, and cancel them,
+- see bookings by day and time, search them, and open one to see all its details, including the guest's link,
+- change a booking (tasting, day, time, party, contact details, notes): the same rules apply, the price is
+  worked out again, and the change is saved only if the new time has room (one SQL statement, as for new bookings),
+- add bookings taken by phone or in person, with just an email or just a phone number,
+- cancel bookings,
 - close extra days, with a warning if the day already has bookings,
 - change the start times, the capacity and how far ahead guests can book.
 
@@ -80,7 +85,7 @@ The use cases come from OpenResto's own test suite, adapted to tastings:
 |---|---|
 | Booking (`ui/booking.spec.ts`) | Book from start to finish and get a confirmation with the link; cancel from the link; full times can't be chosen; places taken while the guest fills in the form; Sfumature party rules; Sundays greyed out; required details; unknown links; accessibility scan |
 | Booking API (`api/bookings.spec.ts`) | No overbooking, including simultaneous bookings; Sundays and Easter Monday closed; past dates and unknown times refused; party sizes per tasting; required fields; JSON only; the server works out the price; cancelling frees the places |
-| Admin (`admin/admin.spec.ts`) | Refuses everything without an Access login, even with a made-up token; the public Worker has no admin functions; staff see and cancel bookings; close and reopen days; change capacity; invalid settings refused |
+| Admin (`admin/admin.spec.ts`) | Refuses everything without an Access login, even with a made-up token; the public Worker has no admin functions; staff see a booking's details and link; change a booking, with price and places updated; changes that don't fit refused; phone bookings; cancel bookings; close and reopen days; change capacity; invalid settings refused; accessibility scan |
 
 Tests that create bookings or use the local admin are skipped when `BASE_URL` points elsewhere. Against
 the deployed trial, only the read-only checks run:
@@ -101,7 +106,7 @@ Needs a Cloudflare API token allowed to edit Workers and D1, as `CLOUDFLARE_API_
 **Staff login (Cloudflare Access).**
 1. In the Cloudflare dashboard, open Workers & Pages → `prenota-admin-test` → Settings → Domains & Routes, and enable Cloudflare Access for its `workers.dev` address.
 2. Choose who may sign in: the staff's email addresses.
-3. Copy the team domain (`<team>.cloudflareaccess.com`) and the application's AUD tag into `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` in `wrangler.admin.toml`.
+3. Copy the team domain (`<team>.cloudflareaccess.com`) and the application's AUD tag into `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` in `wrangler.admin.toml`, and the booking Worker's address into `PUBLIC_URL` (so the admin shows guests' links).
 4. Deploy again.
 
 **Bot check (Turnstile), optional for the trial.**
