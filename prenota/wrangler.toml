@@ -1,0 +1,25 @@
+# The public booking Worker: booking pages (public/) and the guests' API (src/public.ts).
+# Trial copy, at https://prenota-test.<subdomain>.workers.dev. See README.md.
+name = "prenota-test"
+main = "src/public.ts"
+compatibility_date = "2026-10-01"
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "prenota-test"
+# Set by `wrangler d1 create prenota-test`; the same database as wrangler.admin.toml.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[observability]
+enabled = true
+
+# Secrets, set with `wrangler secret put` (never in this file):
+#   TURNSTILE_SECRET_KEY   Turnstile bot check (with TURNSTILE_SITE_KEY below)
+# [vars]
+# TURNSTILE_SITE_KEY = "..."

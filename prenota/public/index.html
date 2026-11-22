@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prenota una degustazione · Tenuta Roveglia</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/booking.js" defer></script>
+</head>
+<body>
+  <div class="trial">Versione di prova: le prenotazioni non sono reali.</div>
+  <header class="hero">
+    <div class="brand">Tenuta Roveglia</div>
+    <h1>Prenota la tua degustazione</h1>
+    <p>Visita guidata della cantina e degustazione dei nostri vini Lugana. Pagamento in cantina il giorno della visita.</p>
+  </header>
+
+  <main>
+    <form id="booking" novalidate>
+      <section class="step" id="step-tasting">
+        <h2><span class="num">1</span>Scegli la degustazione</h2>
+        <p class="hint">Tutte le visite includono l'introduzione alla Denominazione Lugana, i vigneti, la cantina nuova e la parte storica.</p>
+        <div class="tastings" id="tastings" role="group" aria-label="Degustazioni"><p>Caricamento…</p></div>
+      </section>
+
+      <section class="step" id="step-party" aria-disabled="true">
+        <h2><span class="num">2</span>Quante persone?</h2>
+        <p class="hint" id="party-hint"></p>
+        <div class="party">
+          <div><label for="adults">Adulti</label><select id="adults"></select></div>
+          <div id="teens-field"><label for="teens">Ragazzi <small>13–17 anni</small></label><select id="teens"></select></div>
+          <div id="children-field"><label for="children">Bambini <small>0–12 anni, gratis</small></label><select id="children"></select></div>
+        </div>
+        <p class="total" id="total" aria-live="polite"></p>
+      </section>
+
+      <section class="step" id="step-date" aria-disabled="true">
+        <h2><span class="num">3</span>Scegli il giorno</h2>
+        <p class="hint">Siamo aperti dal lunedì al sabato, esclusi i giorni festivi.</p>
+        <div class="cal-head">
+          <button type="button" class="cal-nav" id="prev-month" aria-label="Mese precedente">‹</button>
+          <h3 id="month-label" aria-live="polite"></h3>
+          <button type="button" class="cal-nav" id="next-month" aria-label="Mese successivo">›</button>
+        </div>
+        <div class="calendar" id="calendar"></div>
+        <div class="legend"><span>● posti disponibili</span><span>Giorni in grigio: chiuso, pieno o passato</span></div>
+      </section>
+
+      <section class="step" id="step-time" aria-disabled="true">
+        <h2><span class="num">4</span>Scegli l'orario</h2>
+        <p class="hint" id="time-hint"></p>
+        <div class="times" id="times" role="group" aria-label="Orari"></div>
+      </section>
+
+      <section class="step" id="step-details" aria-disabled="true">
+        <h2><span class="num">5</span>I tuoi dati</h2>
+        <div class="fields">
+          <div><label for="name">Nome e cognome</label><input type="text" id="name" autocomplete="name" required maxlength="120"></div>
+          <div class="two">
+            <div><label for="email">Email</label><input type="email" id="email" autocomplete="email" required maxlength="200"></div>
+            <div><label for="phone">Telefono</label><input type="tel" id="phone" autocomplete="tel" required maxlength="40"></div>
+          </div>
+          <div><label for="notes">Note <small>allergie, richieste particolari (facoltativo)</small></label><textarea id="notes" rows="3" maxlength="1000"></textarea></div>
+          <label class="check"><input type="checkbox" id="privacy" required> <span>Acconsento al trattamento dei dati. I dati saranno utilizzati esclusivamente per gestire la prenotazione e non saranno ceduti a terzi.</span></label>
+          <div id="turnstile"></div>
+          <div><button type="submit" class="btn" id="submit">Conferma la prenotazione</button></div>
+        </div>
+        <div id="form-message" role="alert"></div>
+      </section>
+    </form>
+  </main>
+  <footer>Tenuta Roveglia · Pozzolengo (BS) · <a href="mailto:visit@tenutaroveglia.it">visit@tenutaroveglia.it</a></footer>
+</body>
+</html>

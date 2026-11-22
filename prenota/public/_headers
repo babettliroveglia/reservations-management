@@ -1,0 +1,7 @@
+# Headers for the booking pages (Workers static assets). Turnstile, Cloudflare's bot check, needs
+# challenges.cloudflare.com.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; connect-src 'self'; img-src 'self' data:; style-src 'self'; font-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'self' https://tenutaroveglia.com https://www.tenutaroveglia.com
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()

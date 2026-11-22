@@ -1,0 +1,36 @@
+# Local development and tests in Docker (nothing to install on this machine).
+#   docker compose up -d dev        booking pages http://localhost:8787, admin http://localhost:8788
+#   docker compose run --rm tests   browser tests against that local copy (see tests/README.md)
+services:
+  dev:
+    image: node:22-bookworm
+    working_dir: /app
+    command: ["sh", "./dev.sh"]
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    environment:
+      HOME: /tmp
+      WRANGLER_SEND_METRICS: "false"
+      npm_config_update_notifier: "false"
+    ports:
+      - "127.0.0.1:8787:8787"
+      - "127.0.0.1:8788:8788"
+      - "127.0.0.1:8789:8789"
+    volumes:
+      - ./:/app
+
+  # Browser and API tests (tests/), in the same Playwright image as tenutaroveglia-testing. They share
+  # the dev service's network, so they reach it as localhost, which the local admin requires.
+  tests:
+    build: ./tests
+    network_mode: "service:dev"
+    depends_on: [dev]
+    user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+    working_dir: /prenota/tests
+    environment:
+      - HOME=/tmp
+      - BASE_URL
+      - ADMIN_URL
+      - LOCKED_ADMIN_URL
+    volumes:
+      - ./:/prenota
+      - /prenota/tests/node_modules # keep the image's node_modules

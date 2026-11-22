@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prenotazioni · Tenuta Roveglia</title>
+  <meta name="robots" content="noindex">
+  <link rel="stylesheet" href="/admin.css">
+  <script src="/admin.js" defer></script>
+</head>
+<body>
+  <header class="bar">
+    <strong>Tenuta Roveglia · Prenotazioni</strong>
+    <span id="me"></span>
+  </header>
+  <nav class="tabs" role="tablist">
+    <button type="button" role="tab" id="tab-bookings" aria-selected="true" aria-controls="panel-bookings">Prenotazioni</button>
+    <button type="button" role="tab" id="tab-closures" aria-selected="false" aria-controls="panel-closures">Chiusure</button>
+    <button type="button" role="tab" id="tab-settings" aria-selected="false" aria-controls="panel-settings">Impostazioni</button>
+  </nav>
+  <main>
+    <section id="panel-bookings" role="tabpanel" aria-labelledby="tab-bookings">
+      <form class="row" id="range">
+        <label>Dal <input type="date" id="from" required></label>
+        <label>Al <input type="date" id="to" required></label>
+        <label class="inline"><input type="checkbox" id="show-cancelled"> Mostra annullate</label>
+        <button type="submit">Aggiorna</button>
+      </form>
+      <div id="bookings"></div>
+    </section>
+
+    <section id="panel-closures" role="tabpanel" aria-labelledby="tab-closures" hidden>
+      <p class="hint">Domeniche e festivi sono già chiusi. Qui si aggiungono le altre chiusure (eventi, ferie).</p>
+      <form class="row" id="closure-form">
+        <label>Giorno <input type="date" id="closure-date" required></label>
+        <label>Motivo <input type="text" id="closure-reason" maxlength="120" placeholder="es. Festival del Lugana"></label>
+        <button type="submit">Chiudi il giorno</button>
+      </form>
+      <div id="closure-message" role="status"></div>
+      <ul id="closures" class="list"></ul>
+    </section>
+
+    <section id="panel-settings" role="tabpanel" aria-labelledby="tab-settings" hidden>
+      <form id="settings-form" class="stack">
+        <label>Orari di inizio <small>separati da virgola</small> <input type="text" id="slot-times" required></label>
+        <label>Posti per orario <small>tutte le degustazioni insieme, bambini compresi</small> <input type="number" id="slot-capacity" min="1" max="500" required></label>
+        <label>Prenotabile fino a <small>giorni in anticipo</small> <input type="number" id="horizon-days" min="1" max="730" required></label>
+        <button type="submit">Salva</button>
+      </form>
+      <div id="settings-message" role="status"></div>
+    </section>
+  </main>
+</body>
+</html>

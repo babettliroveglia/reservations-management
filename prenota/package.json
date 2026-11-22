@@ -1,0 +1,19 @@
+{
+  "name": "prenota",
+  "private": true,
+  "description": "Tasting bookings for Tenuta Roveglia on Cloudflare Workers and D1",
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test:unit": "node --test --experimental-strip-types test/*.test.ts",
+    "db:migrate:local": "wrangler d1 migrations apply prenota-test --local --persist-to .state",
+    "dev:public": "wrangler dev --ip 0.0.0.0 --port 8787 --persist-to .state",
+    "dev:admin": "wrangler dev -c wrangler.admin.toml --ip 0.0.0.0 --port 8788 --persist-to .state --var DEV_ADMIN_EMAIL:staff@localhost",
+    "deploy": "wrangler d1 migrations apply prenota-test --remote && wrangler deploy && wrangler deploy -c wrangler.admin.toml"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261106.1",
+    "typescript": "7.0.2",
+    "wrangler": "4.151.0"
+  }
+}
