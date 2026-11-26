@@ -1,0 +1,5 @@
+# Crash dumps (e.g. from a dev server killed mid-run), anywhere in the repo.
+core
+core.[0-9]*
+# ...but not folders that happen to be called "core".
+!core/

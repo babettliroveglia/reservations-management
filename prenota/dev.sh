@@ -12,5 +12,7 @@ npx wrangler dev -c wrangler.admin.toml --ip 0.0.0.0 --port 8788 --inspector-por
   --var DEV_ADMIN_EMAIL:staff@localhost --var PUBLIC_URL:http://localhost:8787 &
 npx wrangler dev -c wrangler.admin.toml --ip 0.0.0.0 --port 8789 --inspector-port 9231 --persist-to .state --show-interactive-dev-session=false \
   --var DEV_ADMIN_EMAIL:staff@localhost --var ACCESS_TEAM_DOMAIN:example.cloudflareaccess.invalid --var ACCESS_AUD:test-audience &
-trap 'kill 0' INT TERM
+# Reset the trap first: `kill 0` signals this shell too, and a trap that kept firing on its own
+# signal recursed until the shell crashed (it left a core dump on `docker compose down`).
+trap 'trap - INT TERM; kill 0' INT TERM
 wait
